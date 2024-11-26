@@ -2,13 +2,44 @@ import streamlit as st
 import numpy as np
 import random
 from pydub import AudioSegment
-import simpleaudio as sa
+
+try:
+    import simpleaudio as sa
+    SIMPLEAUDIO_AVAILABLE = True
+except ImportError:
+    SIMPLEAUDIO_AVAILABLE = False
 
 # Define notes with frequencies (Hz) and their corresponding WAV file names
 notes = {
     "C4": 261.63, "D4": 293.66, "E4": 329.63, "F4": 349.23, 
     "G4": 392.00, "A4": 440.00, "B4": 493.88, "C5": 523.25
 }
+
+# Rest of your code...
+
+# Function to play a note
+def play_note(note):
+    if SIMPLEAUDIO_AVAILABLE:
+        wave_obj = sa.WaveObject.from_wave_file(f"{note}.wav")
+        play_obj = wave_obj.play()
+        play_obj.wait_done()
+    else:
+        st.warning("simpleaudio is not available. Note playback is disabled.")
+
+# Function to play the best harmony
+def play_harmony(note_sequence):
+    harmony = AudioSegment.from_wav(f"{note_sequence[0]}.wav")
+    for note in note_sequence[1:]:
+        sound = AudioSegment.from_wav(f"{note}.wav")
+        harmony += sound
+    harmony.export("best_harmony.wav", format="wav")
+    if SIMPLEAUDIO_AVAILABLE:
+        wave_obj = sa.WaveObject.from_wave_file("best_harmony.wav")
+        play_obj = wave_obj.play()
+        play_obj.wait_done()
+    st.audio("best_harmony.wav")
+
+# Rest of your Streamlit UI code...
 
 
 # Harmony Search parameters
@@ -66,24 +97,6 @@ def harmony_search(harmony_memory):
             harmony_memory[-1] = new_harmony
             harmony_memory = sorted(harmony_memory, key=objective_function)
     return harmony_memory
-
-# Function to play a note
-def play_note(note):
-    wave_obj = sa.WaveObject.from_wave_file(f"{note}.wav")
-    play_obj = wave_obj.play()
-    play_obj.wait_done()
-
-# Function to play the best harmony
-def play_harmony(note_sequence):
-    harmony = AudioSegment.from_wav(f"{note_sequence[0]}.wav")
-    for note in note_sequence[1:]:
-        sound = AudioSegment.from_wav(f"{note}.wav")
-        harmony += sound
-    harmony.export("best_harmony.wav", format="wav")
-    wave_obj = sa.WaveObject.from_wave_file("best_harmony.wav")
-    play_obj = wave_obj.play()
-    play_obj.wait_done()
-
 
 # Streamlit UI
 st.header("Simple Piano with Harmony Search 	:musical_keyboard:")
