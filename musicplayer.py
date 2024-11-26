@@ -3,8 +3,6 @@ import numpy as np
 import random
 from pydub import AudioSegment
 import io
-import os
-from tempfile import NamedTemporaryFile
 
 # Define notes with frequencies (Hz) and their corresponding WAV file names
 notes = {
@@ -69,27 +67,25 @@ def harmony_search(harmony_memory):
             harmony_memory = sorted(harmony_memory, key=objective_function)
     return harmony_memory
 
-# Function to play a note using Streamlit Audio
-def play_note_with_streamlit_audio(note):
-    # Using a temp file to save and play the sound in Streamlit
+# Function to play a note
+def play_note(note):
+    # Load audio file as a byte stream using pydub and return it
     sound = AudioSegment.from_wav(f"{note}.wav")
-    with NamedTemporaryFile(delete=False) as temp_file:
-        temp_file_path = temp_file.name
-        sound.export(temp_file_path, format="wav")
-        st.audio(temp_file_path)
+    byte_io = io.BytesIO()
+    sound.export(byte_io, format="wav")
+    byte_io.seek(0)
+    return byte_io
 
-# Function to play the best harmony using Streamlit Audio
-def play_harmony_with_streamlit_audio(note_sequence):
+# Function to play the best harmony
+def play_harmony(note_sequence):
     harmony = AudioSegment.from_wav(f"{note_sequence[0]}.wav")
     for note in note_sequence[1:]:
         sound = AudioSegment.from_wav(f"{note}.wav")
         harmony += sound
-    
-    # Save the harmony to a temporary file and play it in Streamlit
-    with NamedTemporaryFile(delete=False) as temp_file:
-        temp_file_path = temp_file.name
-        harmony.export(temp_file_path, format="wav")
-        st.audio(temp_file_path)
+    byte_io = io.BytesIO()
+    harmony.export(byte_io, format="wav")
+    byte_io.seek(0)
+    return byte_io
 
 # Streamlit UI
 st.header("Simple Piano with Harmony Search 🎹")
@@ -103,7 +99,8 @@ cols = st.columns(len(notes))
 for i, note in enumerate(notes.keys()):
     with cols[i]:
         if st.button(note):
-            play_note_with_streamlit_audio(note)
+            audio_data = play_note(note)
+            st.audio(audio_data)
 
 # Create three columns to center the "Generate Best Harmony" button
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -115,5 +112,6 @@ with col2:
         best_harmony_sequence = best_harmony[0]
         st.write("Best Note Sequence:", best_harmony_sequence)
         
-        # Play the best harmony (note: this will only work if the .wav files are present)
-        play_harmony_with_streamlit_audio(best_harmony_sequence)
+        # Play the best harmony
+        audio_data = play_harmony(best_harmony_sequence)
+        st.audio(audio_data)
