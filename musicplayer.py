@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import random
 from pydub import AudioSegment
-import io
+import soundfile as sf  # Replaced simpleaudio with soundfile
 
 # Define notes with frequencies (Hz) and their corresponding WAV file names
 notes = {
@@ -69,12 +69,10 @@ def harmony_search(harmony_memory):
 
 # Function to play a note
 def play_note(note):
-    # Load audio file as a byte stream using pydub and return it
-    sound = AudioSegment.from_wav(f"{note}.wav")
-    byte_io = io.BytesIO()
-    sound.export(byte_io, format="wav")
-    byte_io.seek(0)
-    return byte_io
+    # Use soundfile to read and play the WAV files
+    data, samplerate = sf.read(f"{note}.wav")
+    sf.write("temp.wav", data, samplerate)  # Temporary write to file to play
+    st.audio("temp.wav")
 
 # Function to play the best harmony
 def play_harmony(note_sequence):
@@ -82,10 +80,12 @@ def play_harmony(note_sequence):
     for note in note_sequence[1:]:
         sound = AudioSegment.from_wav(f"{note}.wav")
         harmony += sound
-    byte_io = io.BytesIO()
-    harmony.export(byte_io, format="wav")
-    byte_io.seek(0)
-    return byte_io
+    harmony.export("best_harmony.wav", format="wav")
+    
+    # Using soundfile to read and play the best harmony
+    data, samplerate = sf.read("best_harmony.wav")
+    sf.write("temp_best_harmony.wav", data, samplerate)  # Temporary write to file to play
+    st.audio("temp_best_harmony.wav")
 
 # Streamlit UI
 st.header("Simple Piano with Harmony Search 🎹")
@@ -99,8 +99,7 @@ cols = st.columns(len(notes))
 for i, note in enumerate(notes.keys()):
     with cols[i]:
         if st.button(note):
-            audio_data = play_note(note)
-            st.audio(audio_data)
+            play_note(note)
 
 # Create three columns to center the "Generate Best Harmony" button
 col1, col2, col3 = st.columns([1, 2, 1])
@@ -112,6 +111,7 @@ with col2:
         best_harmony_sequence = best_harmony[0]
         st.write("Best Note Sequence:", best_harmony_sequence)
         
-        # Play the best harmony
-        audio_data = play_harmony(best_harmony_sequence)
-        st.audio(audio_data)
+        # Play the best harmony (note: this will only work if the .wav files are present)
+        play_harmony(best_harmony_sequence)
+        
+        st.audio("temp_best_harmony.wav")
