@@ -2,7 +2,7 @@ import streamlit as st
 import numpy as np
 import random
 from pydub import AudioSegment
-import soundfile as sf  # Replaced simpleaudio with soundfile
+import simpleaudio as sa
 
 # Define notes with frequencies (Hz) and their corresponding WAV file names
 notes = {
@@ -10,18 +10,18 @@ notes = {
     "G4": 392.00, "A4": 440.00, "B4": 493.88, "C5": 523.25
 }
 
-# Harmony Search parameters
-HMS = 5  # Harmony Memory Size
-HMCR = 0.9  # Harmony Memory Consideration Rate
-PAR = 0.3  # Pitch Adjustment Rate
-num_iterations = 100  # Number of iterations
-sequence_length = 10  # Length of the note sequence to make it around 10 seconds
 
-# Streamlit input for sequence length
-n = st.sidebar.text_input("Sequence Length", "10")
+# Harmony Search parameters
+HMS = 5                  # Harmony Memory Size
+HMCR = 0.9               # Harmony Memory Consideration Rate
+PAR = 0.3                # Pitch Adjustment Rate
+num_iterations = 100     # Number of iterations
+sequence_length = 10     # Length of the note sequence to make it around 10 seconds
+
+n = st.sidebar.text_input("sequence_length")
 if n: 
     sequence_length = int(n)
-    st.sidebar.write(f"Music length: {sequence_length}")
+    st.sidebar.write(f"music length {sequence_length}")
 
 # Objective function with improvements
 def objective_function(note_sequence):
@@ -69,10 +69,9 @@ def harmony_search(harmony_memory):
 
 # Function to play a note
 def play_note(note):
-    # Use soundfile to read and play the WAV files
-    data, samplerate = sf.read(f"{note}.wav")
-    sf.write("temp.wav", data, samplerate)  # Temporary write to file to play
-    st.audio("temp.wav")
+    wave_obj = sa.WaveObject.from_wave_file(f"{note}.wav")
+    play_obj = wave_obj.play()
+    play_obj.wait_done()
 
 # Function to play the best harmony
 def play_harmony(note_sequence):
@@ -81,18 +80,17 @@ def play_harmony(note_sequence):
         sound = AudioSegment.from_wav(f"{note}.wav")
         harmony += sound
     harmony.export("best_harmony.wav", format="wav")
-    
-    # Using soundfile to read and play the best harmony
-    data, samplerate = sf.read("best_harmony.wav")
-    sf.write("temp_best_harmony.wav", data, samplerate)  # Temporary write to file to play
-    st.audio("temp_best_harmony.wav")
+    wave_obj = sa.WaveObject.from_wave_file("best_harmony.wav")
+    play_obj = wave_obj.play()
+    play_obj.wait_done()
+
 
 # Streamlit UI
-st.header("Simple Piano with Harmony Search 🎹")
-st.image("piano.png", use_container_width=True)
+st.header("Simple Piano with Harmony Search 	:musical_keyboard:")
+st.image("piano.png",use_container_width=True)
 
 # Create a simple piano interface
-st.title("Click on a note to play it 🎧")
+st.title("Click on a note to play it :headphones:")
 
 # Display buttons for each note in one row
 cols = st.columns(len(notes))
@@ -105,7 +103,7 @@ for i, note in enumerate(notes.keys()):
 col1, col2, col3 = st.columns([1, 2, 1])
 
 with col2:
-    if st.button("Generate Best Harmony 🎼"):
+    if st.button("Generate Best Harmony :dvd:"):
         harmony_memory = initialize_harmony_memory()
         best_harmony = harmony_search(harmony_memory)
         best_harmony_sequence = best_harmony[0]
@@ -114,4 +112,4 @@ with col2:
         # Play the best harmony (note: this will only work if the .wav files are present)
         play_harmony(best_harmony_sequence)
         
-        st.audio("temp_best_harmony.wav")
+        st.audio("best_harmony.wav")
